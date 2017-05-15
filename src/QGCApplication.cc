@@ -79,6 +79,7 @@
 #include "QGCMapPolygon.h"
 #include "ParameterManager.h"
 #include "SettingsManager.h"
+#include "AirMapController.h"
 
 #ifndef NO_SERIAL_LINK
 #include "SerialLink.h"
@@ -382,16 +383,17 @@ void QGCApplication::_initCommon(void)
     qmlRegisterUncreatableType<GeoFenceController>  ("QGroundControl.Controllers",          1, 0, "GeoFenceController",     "Reference only");
     qmlRegisterUncreatableType<RallyPointController>("QGroundControl.Controllers",          1, 0, "RallyPointController",    "Reference only");
 
-    qmlRegisterType<ParameterEditorController>          ("QGroundControl.Controllers", 1, 0, "ParameterEditorController");
-    qmlRegisterType<ESP8266ComponentController>         ("QGroundControl.Controllers", 1, 0, "ESP8266ComponentController");
-    qmlRegisterType<ScreenToolsController>              ("QGroundControl.Controllers", 1, 0, "ScreenToolsController");
-    qmlRegisterType<PlanMasterController>        ("QGroundControl.Controllers", 1, 0, "PlanElemementMasterController");
-    qmlRegisterType<ValuesWidgetController>             ("QGroundControl.Controllers", 1, 0, "ValuesWidgetController");
-    qmlRegisterType<QFileDialogController>      ("QGroundControl.Controllers", 1, 0, "QFileDialogController");
-    qmlRegisterType<RCChannelMonitorController>         ("QGroundControl.Controllers", 1, 0, "RCChannelMonitorController");
-    qmlRegisterType<JoystickConfigController>           ("QGroundControl.Controllers", 1, 0, "JoystickConfigController");
-    qmlRegisterType<LogDownloadController>              ("QGroundControl.Controllers", 1, 0, "LogDownloadController");
-    qmlRegisterType<SyslinkComponentController>         ("QGroundControl.Controllers", 1, 0, "SyslinkComponentController");
+    qmlRegisterType<ParameterEditorController>      ("QGroundControl.Controllers", 1, 0, "ParameterEditorController");
+    qmlRegisterType<ESP8266ComponentController>     ("QGroundControl.Controllers", 1, 0, "ESP8266ComponentController");
+    qmlRegisterType<ScreenToolsController>          ("QGroundControl.Controllers", 1, 0, "ScreenToolsController");
+    qmlRegisterType<PlanMasterController>           ("QGroundControl.Controllers", 1, 0, "PlanElemementMasterController");
+    qmlRegisterType<ValuesWidgetController>         ("QGroundControl.Controllers", 1, 0, "ValuesWidgetController");
+    qmlRegisterType<QFileDialogController>          ("QGroundControl.Controllers", 1, 0, "QFileDialogController");
+    qmlRegisterType<RCChannelMonitorController>     ("QGroundControl.Controllers", 1, 0, "RCChannelMonitorController");
+    qmlRegisterType<JoystickConfigController>       ("QGroundControl.Controllers", 1, 0, "JoystickConfigController");
+    qmlRegisterType<LogDownloadController>          ("QGroundControl.Controllers", 1, 0, "LogDownloadController");
+    qmlRegisterType<SyslinkComponentController>     ("QGroundControl.Controllers", 1, 0, "SyslinkComponentController");
+    qmlRegisterType<AirMapController>               ("QGroundControl.Controllers", 1, 0, "AirMapController");
 #ifndef __mobile__
     qmlRegisterType<ViewWidgetController>           ("QGroundControl.Controllers", 1, 0, "ViewWidgetController");
     qmlRegisterType<CustomCommandWidgetController>  ("QGroundControl.Controllers", 1, 0, "CustomCommandWidgetController");
