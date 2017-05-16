@@ -11,6 +11,8 @@
 #include "Vehicle.h"
 #include "QmlObjectListModel.h"
 #include "JsonHelper.h"
+#include "SettingsManager.h"
+#include "AppSettings.h"
 
 #include <QNetworkAccessManager>
 #include <QUrlQuery>
@@ -23,7 +25,9 @@ QGC_LOGGING_CATEGORY(AirMapManagerLog, "AirMapManagerLog")
 AirMapManager::AirMapManager(QGCApplication* app, QGCToolbox* toolbox)
     : QGCTool(app, toolbox)
 {
-
+    _updateTimer.setInterval(5000);
+    _updateTimer.setSingleShot(true);
+    connect(&_updateTimer, &QTimer::timeout, this, &AirMapManager::_updateToROI);
 }
 
 AirMapManager::~AirMapManager()
@@ -35,58 +39,7 @@ void AirMapManager::setROI(QGeoCoordinate& center, double radiusMeters)
 {
     _roiCenter = center;
     _roiRadius = radiusMeters;
-
-    // Build up the polygon for the query
-
-    QJsonObject     polygonJson;
-
-    polygonJson["type"] = "Polygon";
-
-    QGeoCoordinate left =   center.atDistanceAndAzimuth(radiusMeters, -90);
-    QGeoCoordinate right =  center.atDistanceAndAzimuth(radiusMeters, 90);
-    QGeoCoordinate top =    center.atDistanceAndAzimuth(radiusMeters, 0);
-    QGeoCoordinate bottom = center.atDistanceAndAzimuth(radiusMeters, 180);
-
-    QGeoCoordinate topLeft(top.latitude(), left.longitude());
-    QGeoCoordinate topRight(top.latitude(), right.longitude());
-    QGeoCoordinate bottomLeft(bottom.latitude(), left.longitude());
-    QGeoCoordinate bottomRight(bottom.latitude(), left.longitude());
-
-    QJsonValue  vertex;
-    QJsonArray  rgVertex;
-
-    JsonHelper::saveGeoCoordinate(topLeft, false /* writeAltitude */, vertex);
-    rgVertex.append(vertex);
-    JsonHelper::saveGeoCoordinate(topRight, false /* writeAltitude */, vertex);
-    rgVertex.append(vertex);
-    JsonHelper::saveGeoCoordinate(bottomRight, false /* writeAltitude */, vertex);
-    rgVertex.append(vertex);
-    JsonHelper::saveGeoCoordinate(bottomLeft, false /* writeAltitude */, vertex);
-    rgVertex.append(vertex);
-    JsonHelper::saveGeoCoordinate(topLeft, false /* writeAltitude */, vertex);
-    rgVertex.append(vertex);
-
-    QJsonArray rgPolygon;
-    rgPolygon.append(rgVertex);
-
-    polygonJson["coordinates"] = rgPolygon;
-    QJsonDocument polygonJsonDoc(polygonJson);
-
-    // Build up the http query
-
-    QUrlQuery airspaceQuery;
-
-    airspaceQuery.addQueryItem(QStringLiteral("geometry"), QString::fromUtf8(polygonJsonDoc.toJson(QJsonDocument::Compact)));
-    airspaceQuery.addQueryItem(QStringLiteral("types"), QStringLiteral("airport,controlled_airspace,tfr,wildfire"));
-    airspaceQuery.addQueryItem(QStringLiteral("full"), QStringLiteral("true"));
-    airspaceQuery.addQueryItem(QStringLiteral("geometry_format"), QStringLiteral("wkt"));
-
-    QUrl airMapAirspaceUrl(QStringLiteral("https://api.airmap.com/airspace/v2/search"));
-    airMapAirspaceUrl.setQuery(airspaceQuery);
-
-    qDebug() << airMapAirspaceUrl;
-
-    _get(airMapAirspaceUrl);
+    _updateTimer.start();
 }
 
 void AirMapManager::_get(QUrl url)
@@ -94,7 +47,9 @@ void AirMapManager::_get(QUrl url)
     QNetworkRequest request(url);
 
     qDebug() << url.toString(QUrl::FullyEncoded);
-    request.setRawHeader("X-API-Key", "Key goes here");
+    qDebug() << _toolbox->settingsManager()->appSettings()->airMapKey()->rawValueString();
+
+    request.setRawHeader("X-API-Key", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjcmVkZW50aWFsX2lkIjoiY3JlZGVudGlhbHxNNVg0R3hnaU9FZ1p6Z3RkOXk0bHpoa3BLdld4IiwiYXBwbGljYXRpb25faWQiOiJhcHBsaWNhdGlvbnxReWxEWEVXdW9QQmJRd3NMMzVSazJGMGd2d1hSIiwib3JnYW5pemF0aW9uX2lkIjoiZGV2ZWxvcGVyfHBnYUF5eUpUOWt4a3E1SW9HZ2FESW9CWkxMQSIsImlhdCI6MTQ5MTIxMDE5MX0.-UoX2yXYGQAcU6kXxLtIXsF62LnWJJaFU4B5GPVRJEI" /*_toolbox->settingsManager()->appSettings()->airMapKey()->rawValueString().toUtf8() */);
 
     QNetworkProxy tProxy;
     tProxy.setType(QNetworkProxy::DefaultProxy);
@@ -130,11 +85,22 @@ void AirMapManager::_getFinished(void)
     }
 
     qDebug() << "_getFinished";
-    qDebug() << QString::fromUtf8(reply->readAll());
+    QByteArray responseBytes = reply->readAll();
+    //qDebug() << responseBytes;
+
+    QJsonParseError parseError;
+    QJsonDocument responseJson = QJsonDocument::fromJson(responseBytes, &parseError);
+    // FIXME: Error handling
+    qDebug() << responseJson.isNull() << parseError.errorString();
+    //qDebug().noquote() << responseJson.toJson();
+
+    _parseAirspaceJson(responseJson);
 }
 
 void AirMapManager::_getError(QNetworkReply::NetworkError code)
 {
+    QNetworkReply* reply = qobject_cast<QNetworkReply*>(QObject::sender());
+
     QString errorMsg;
 
     if (code == QNetworkReply::OperationCanceledError) {
@@ -144,28 +110,109 @@ void AirMapManager::_getError(QNetworkReply::NetworkError code)
         errorMsg = "Error: File Not Found";
 
     } else {
-        errorMsg = QString("Error during download. Error: %1").arg(code);
+        errorMsg = QString("Error during download. Error: (%1, %2)").arg(code).arg(reply->errorString());
     }
 
     // FIXME
     qWarning() << errorMsg;
 }
 
-void AirMapManager::_addFakeData(void)
+void AirMapManager::_updateToROI(void)
 {
-    _rgPolygon.clear();
-    _rgCircle.clear();
+    // Build up the polygon for the query
 
-    _rgCircle.append(_roiCenter);
+    QJsonObject     polygonJson;
 
-    QList<QGeoCoordinate> polygon;
-    polygon.append(_roiCenter.atDistanceAndAzimuth(200, 45));
-    polygon.append(_roiCenter.atDistanceAndAzimuth(200, 135));
-    polygon.append(_roiCenter.atDistanceAndAzimuth(200, 225));
-    polygon.append(_roiCenter.atDistanceAndAzimuth(200, 315));
-    _rgPolygon.append(polygon);
+    polygonJson["type"] = "Polygon";
 
-    emit polygonsChanged();
-    emit circlesChanged();
+    QGeoCoordinate left =   _roiCenter.atDistanceAndAzimuth(_roiRadius, -90);
+    QGeoCoordinate right =  _roiCenter.atDistanceAndAzimuth(_roiRadius, 90);
+    QGeoCoordinate top =    _roiCenter.atDistanceAndAzimuth(_roiRadius, 0);
+    QGeoCoordinate bottom = _roiCenter.atDistanceAndAzimuth(_roiRadius, 180);
+
+    QGeoCoordinate topLeft(top.latitude(), left.longitude());
+    QGeoCoordinate topRight(top.latitude(), right.longitude());
+    QGeoCoordinate bottomLeft(bottom.latitude(), left.longitude());
+    QGeoCoordinate bottomRight(bottom.latitude(), left.longitude());
+
+    QJsonValue  coordValue;
+    QJsonArray  rgVertex;
+
+    // GeoJson polygons are right handed and include duplicate first and last vertex
+    JsonHelper::saveGeoJsonCoordinate(topLeft, false /* writeAltitude */, coordValue);
+    rgVertex.append(coordValue);
+    JsonHelper::saveGeoJsonCoordinate(bottomLeft, false /* writeAltitude */, coordValue);
+    rgVertex.append(coordValue);
+    JsonHelper::saveGeoJsonCoordinate(bottomRight, false /* writeAltitude */, coordValue);
+    rgVertex.append(coordValue);
+    JsonHelper::saveGeoJsonCoordinate(topRight, false /* writeAltitude */, coordValue);
+    rgVertex.append(coordValue);
+    JsonHelper::saveGeoJsonCoordinate(topLeft, false /* writeAltitude */, coordValue);
+    rgVertex.append(coordValue);
+
+    QJsonArray rgPolygon;
+    rgPolygon.append(rgVertex);
+
+    polygonJson["coordinates"] = rgPolygon;
+    QJsonDocument polygonJsonDoc(polygonJson);
+
+    // Build up the http query
+
+    QUrlQuery airspaceQuery;
+
+    airspaceQuery.addQueryItem(QStringLiteral("geometry"), QString::fromUtf8(polygonJsonDoc.toJson(QJsonDocument::Compact)));
+    airspaceQuery.addQueryItem(QStringLiteral("types"), QStringLiteral("airport,controlled_airspace,tfr,wildfire"));
+    airspaceQuery.addQueryItem(QStringLiteral("full"), QStringLiteral("true"));
+    airspaceQuery.addQueryItem(QStringLiteral("geometry_format"), QStringLiteral("geojson"));
+
+    QUrl airMapAirspaceUrl(QStringLiteral("https://api.airmap.com/airspace/v2/search"));
+    airMapAirspaceUrl.setQuery(airspaceQuery);
+
+    _get(airMapAirspaceUrl);
 }
 
+void AirMapManager::_parseAirspaceJson(const QJsonDocument& airspaceDoc)
+{
+    if (!airspaceDoc.isObject()) {
+        // FIXME
+        return;
+    }
+
+    _polygonList.clearAndDeleteContents();
+    _circleList.clearAndDeleteContents();
+
+    QJsonObject rootObject = airspaceDoc.object();
+    const QJsonArray& airspaceArray = rootObject["data"].toArray();
+    for (int i=0; i< airspaceArray.count(); i++) {
+        const QJsonObject& airspaceObject = airspaceArray[i].toObject();
+        QString airspaceType(airspaceObject["type"].toString());
+        qDebug() << airspaceType;
+        qDebug() << airspaceObject["name"].toString();
+        QGeoCoordinate center(airspaceObject["latitude"].toDouble(), airspaceObject["longitude"].toDouble());
+        qDebug() << center;
+        if (airspaceType == "airport") {
+            _circleList.append(new CircularAirspaceRestriction(center, 8046.72));
+        }
+    }
+}
+
+AirspaceRestriction::AirspaceRestriction(QObject* parent)
+    : QObject(parent)
+{
+
+}
+
+PolygonAirspaceRestriction::PolygonAirspaceRestriction(const QVariantList& polygon, QObject* parent)
+    : AirspaceRestriction(parent)
+    , _polygon(polygon)
+{
+
+}
+
+CircularAirspaceRestriction::CircularAirspaceRestriction(const QGeoCoordinate& center, double radius, QObject* parent)
+    : AirspaceRestriction(parent)
+    , _center(center)
+    , _radius(radius)
+{
+
+}

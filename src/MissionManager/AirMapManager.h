@@ -12,11 +12,13 @@
 
 #include "QGCToolbox.h"
 #include "QGCLoggingCategory.h"
+#include "QmlObjectListModel.h"
 
 #include <QGeoCoordinate>
 #include <QList>
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
+#include <QTimer>
 
 Q_DECLARE_LOGGING_CATEGORY(AirMapManagerLog)
 
@@ -34,8 +36,8 @@ public:
     ///     @param radiusMeters Radius in meters around center which is of interest
     void setROI(QGeoCoordinate& center, double radiusMeters);
 
-    const QList<QList<QGeoCoordinate>>& rgPolygon(void) const { return _rgPolygon; }
-    const QList<QGeoCoordinate>&        rgCircle(void) const { return _rgCircle; }
+    QmlObjectListModel* polygonRestrictions(void) { return &_polygonList; }
+    QmlObjectListModel* circularRestrictions(void) { return &_circleList; }
         
 signals:
     void polygonsChanged(void);
@@ -44,16 +46,54 @@ signals:
 private slots:
     void _getFinished(void);
     void _getError(QNetworkReply::NetworkError code);
+    void _updateToROI(void);
 
 private:
     void _get(QUrl url);
-    void _addFakeData(void);
+    void _parseAirspaceJson(const QJsonDocument& airspaceDoc);
 
-    QGeoCoordinate                  _roiCenter;
-    double                          _roiRadius;
-    QList<QList<QGeoCoordinate>>    _rgPolygon;
-    QList<QGeoCoordinate>           _rgCircle;
-    QNetworkAccessManager           _networkManager;
+    QGeoCoordinate          _roiCenter;
+    double                  _roiRadius;
+    QNetworkAccessManager   _networkManager;
+    QTimer                  _updateTimer;
+    QmlObjectListModel      _polygonList;
+    QmlObjectListModel      _circleList;
+};
+
+class AirspaceRestriction : public QObject
+{
+    Q_OBJECT
+
+public:
+    AirspaceRestriction(QObject* parent = NULL);
+};
+
+class PolygonAirspaceRestriction : public AirspaceRestriction
+{
+    Q_OBJECT
+
+public:
+    PolygonAirspaceRestriction(const QVariantList& polygon, QObject* parent = NULL);
+
+    Q_PROPERTY(QVariantList polygon MEMBER _polygon CONSTANT)
+
+private:
+    QVariantList    _polygon;
+};
+
+class CircularAirspaceRestriction : public AirspaceRestriction
+{
+    Q_OBJECT
+
+public:
+    CircularAirspaceRestriction(const QGeoCoordinate& center, double radius, QObject* parent = NULL);
+
+    Q_PROPERTY(QGeoCoordinate   center MEMBER _center CONSTANT)
+    Q_PROPERTY(double           radius MEMBER _radius CONSTANT)
+
+private:
+    QGeoCoordinate  _center;
+    double          _radius;
 };
 
 #endif

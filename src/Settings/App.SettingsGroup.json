@@ -122,5 +122,10 @@
     "longDescription":  "Directory to which all data files  are saved/loaded from",
     "type":             "string",
     "defaultValue":     ""
+},
+{
+    "name":             "AirMapKey",
+    "type":             "string",
+    "defaultValue":     ""
 }
 ]

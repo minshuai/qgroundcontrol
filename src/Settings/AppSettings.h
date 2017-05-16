@@ -35,6 +35,7 @@ public:
     Q_PROPERTY(Fact* showLargeCompass                   READ showLargeCompass                   CONSTANT)
     Q_PROPERTY(Fact* savePath                           READ savePath                           CONSTANT)
     Q_PROPERTY(Fact* autoLoadMissions                   READ autoLoadMissions                   CONSTANT)
+    Q_PROPERTY(Fact* airMapKey                          READ airMapKey                          CONSTANT)
 
     Q_PROPERTY(QString missionSavePath      READ missionSavePath    NOTIFY savePathsChanged)
     Q_PROPERTY(QString parameterSavePath    READ parameterSavePath  NOTIFY savePathsChanged)
@@ -61,6 +62,7 @@ public:
     Fact* showLargeCompass                  (void);
     Fact* savePath                          (void);
     Fact* autoLoadMissions                  (void);
+    Fact* airMapKey                         (void);
 
     QString missionSavePath     (void);
     QString parameterSavePath   (void);
@@ -86,6 +88,7 @@ public:
     static const char* showLargeCompassName;
     static const char* savePathName;
     static const char* autoLoadMissionsName;
+    static const char* airMapKeyName;
 
     // Application wide file extensions
     static const char* parameterFileExtension;
@@ -124,6 +127,7 @@ private:
     SettingsFact* _showLargeCompassFact;
     SettingsFact* _savePathFact;
     SettingsFact* _autoLoadMissionsFact;
+    SettingsFact* _airMapKeyFact;
 };
 
 #endif
