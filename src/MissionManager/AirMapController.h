@@ -31,8 +31,13 @@ public:
 
     Q_INVOKABLE void setROI(QGeoCoordinate center, double radius) { _manager->setROI(center, radius); }
 
+<<<<<<< HEAD
     QmlObjectListModel* polygons(void) { return _manager->polygonRestrictions(); }
     QmlObjectListModel* circles(void) { return _manager->circularRestrictions(); }
+=======
+    QmlObjectListModel* polygons(void) { return &_polygonList; }
+    QmlObjectListModel* circles(void) { return &_circleList; }
+>>>>>>> origin/AirMap
 
 signals:
     void polygonChanged(void);

@@ -12,13 +12,19 @@
 
 #include "QGCToolbox.h"
 #include "QGCLoggingCategory.h"
+<<<<<<< HEAD
 #include "QmlObjectListModel.h"
+=======
+>>>>>>> origin/AirMap
 
 #include <QGeoCoordinate>
 #include <QList>
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
+<<<<<<< HEAD
 #include <QTimer>
+=======
+>>>>>>> origin/AirMap
 
 Q_DECLARE_LOGGING_CATEGORY(AirMapManagerLog)
 
@@ -36,8 +42,13 @@ public:
     ///     @param radiusMeters Radius in meters around center which is of interest
     void setROI(QGeoCoordinate& center, double radiusMeters);
 
+<<<<<<< HEAD
     QmlObjectListModel* polygonRestrictions(void) { return &_polygonList; }
     QmlObjectListModel* circularRestrictions(void) { return &_circleList; }
+=======
+    const QList<QList<QGeoCoordinate>>& rgPolygon(void) const { return _rgPolygon; }
+    const QList<QGeoCoordinate>&        rgCircle(void) const { return _rgCircle; }
+>>>>>>> origin/AirMap
         
 signals:
     void polygonsChanged(void);
@@ -46,6 +57,7 @@ signals:
 private slots:
     void _getFinished(void);
     void _getError(QNetworkReply::NetworkError code);
+<<<<<<< HEAD
     void _updateToROI(void);
 
 private:
@@ -94,6 +106,18 @@ public:
 private:
     QGeoCoordinate  _center;
     double          _radius;
+=======
+
+private:
+    void _get(QUrl url);
+    void _addFakeData(void);
+
+    QGeoCoordinate                  _roiCenter;
+    double                          _roiRadius;
+    QList<QList<QGeoCoordinate>>    _rgPolygon;
+    QList<QGeoCoordinate>           _rgCircle;
+    QNetworkAccessManager           _networkManager;
+>>>>>>> origin/AirMap
 };
 
 #endif

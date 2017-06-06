@@ -32,7 +32,10 @@ AirMapController::~AirMapController()
 
 void AirMapController::_managerPolygonsChanged(void)
 {
+<<<<<<< HEAD
 #if 0
+=======
+>>>>>>> origin/AirMap
     _polygonList.clearAndDeleteContents();
 
     const QList<QList<QGeoCoordinate>>& rgPolygons = _manager->rgPolygon();
@@ -47,13 +50,19 @@ void AirMapController::_managerPolygonsChanged(void)
 
         _polygonList.append(mapPolygon);
     }
+<<<<<<< HEAD
 #endif
+=======
+>>>>>>> origin/AirMap
 }
 
 
 void AirMapController::_managerCirclesChanged(void)
 {
+<<<<<<< HEAD
 #if 0
+=======
+>>>>>>> origin/AirMap
     _circleList.clearAndDeleteContents();
 
     const QList<QGeoCoordinate>& rgCircles = _manager->rgCircle();
@@ -63,5 +72,8 @@ void AirMapController::_managerCirclesChanged(void)
 
         _circleList.append(new QGCQGeoCoordinate(center, this));
     }
+<<<<<<< HEAD
 #endif
+=======
+>>>>>>> origin/AirMap
 }

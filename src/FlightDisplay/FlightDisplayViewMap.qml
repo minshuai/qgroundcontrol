@@ -309,8 +309,13 @@ FlightMap {
         model: airMapController.circles
 
         delegate: MapCircle {
+<<<<<<< HEAD
             center:         object.center
             radius:         object.radius
+=======
+            center:         object.coordinate
+            radius:         100
+>>>>>>> origin/AirMap
             border.color:   "white"
             color:          "yellow"
             opacity:        0.25
@@ -324,7 +329,11 @@ FlightMap {
             border.color:   "white"
             color:          "yellow"
             opacity:        0.25
+<<<<<<< HEAD
             path:           object.polygon
+=======
+            path:           object.path
+>>>>>>> origin/AirMap
         }
     }
 }
