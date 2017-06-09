@@ -26,26 +26,13 @@ public:
     AirMapController(QObject* parent = NULL);
     ~AirMapController();
 
-    Q_PROPERTY(QmlObjectListModel*  polygons    READ polygons   CONSTANT)
-    Q_PROPERTY(QmlObjectListModel*  circles     READ circles    CONSTANT)
+    Q_PROPERTY(QmlObjectListModel*  polygons    READ polygons   CONSTANT)   ///< List of PolygonAirspaceRestriction objects
+    Q_PROPERTY(QmlObjectListModel*  circles     READ circles    CONSTANT)   ///< List of CircularAirspaceRestriction objects
 
     Q_INVOKABLE void setROI(QGeoCoordinate center, double radius) { _manager->setROI(center, radius); }
 
-<<<<<<< HEAD
     QmlObjectListModel* polygons(void) { return _manager->polygonRestrictions(); }
     QmlObjectListModel* circles(void) { return _manager->circularRestrictions(); }
-=======
-    QmlObjectListModel* polygons(void) { return &_polygonList; }
-    QmlObjectListModel* circles(void) { return &_circleList; }
->>>>>>> origin/AirMap
-
-signals:
-    void polygonChanged(void);
-    void circlesChanged(void);
-
-private slots:
-    void _managerPolygonsChanged(void);
-    void _managerCirclesChanged(void);
 
 private:
     AirMapManager*      _manager;
