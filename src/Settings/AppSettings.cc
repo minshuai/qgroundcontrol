@@ -31,6 +31,7 @@ const char* AppSettings::indoorPaletteName =                            "StyleIs
 const char* AppSettings::showLargeCompassName =                         "ShowLargeCompass";
 const char* AppSettings::savePathName =                                 "SavePath";
 const char* AppSettings::autoLoadMissionsName =                         "AutoLoadMissions";
+const char* AppSettings::airMapKeyName =                                "AirMapKey";
 
 const char* AppSettings::parameterFileExtension =   "params";
 const char* AppSettings::planFileExtension =        "plan";
@@ -61,6 +62,7 @@ AppSettings::AppSettings(QObject* parent)
     , _showLargeCompassFact(NULL)
     , _savePathFact(NULL)
     , _autoLoadMissionsFact(NULL)
+    , _airMapKeyFact(NULL)
 {
     QQmlEngine::setObjectOwnership(this, QQmlEngine::CppOwnership);
     qmlRegisterUncreatableType<AppSettings>("QGroundControl.SettingsManager", 1, 0, "AppSettings", "Reference only");
@@ -299,5 +301,14 @@ MAV_TYPE AppSettings::offlineEditingVehicleTypeFromVehicleType(MAV_TYPE vehicleT
     } else {
         return MAV_TYPE_QUADROTOR;
     }
+}
+
+Fact* AppSettings::airMapKey(void)
+{
+    if (!_airMapKeyFact) {
+        _airMapKeyFact = _createSettingsFact(airMapKeyName);
+    }
+
+    return _airMapKeyFact;
 }
 
